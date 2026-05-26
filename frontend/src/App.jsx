@@ -213,15 +213,8 @@ function Navbar() {
               </form>
             </div>
 
-            <ul className="list-unstyled d-flex flex-column gap-3 mb-auto">
-              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-home me-2 text-muted" style={{ width: '20px' }}></i>Home</Link></li>
-              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-shopping-bag me-2 text-muted" style={{ width: '20px' }}></i>Shop</Link></li>
-              <li><Link to="/about" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-info-circle me-2 text-muted" style={{ width: '20px' }}></i>About Us</Link></li>
-              <li><Link to="/contact" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-envelope me-2 text-muted" style={{ width: '20px' }}></i>Contact</Link></li>
-            </ul>
-
-            {/* User Info / Actions in Mobile Drawer */}
-            <div className="pt-4 border-top border-secondary mt-4">
+            {/* User Info / Actions (Moved to Top for instant visibility) */}
+            <div className="pb-4 border-bottom border-secondary mb-4">
               {user ? (
                 <div className="d-flex flex-column gap-3">
                   <div className="d-flex align-items-center gap-2 text-white mb-2">
@@ -231,20 +224,22 @@ function Navbar() {
                       <span className="fw-medium text-capitalize" style={{ fontSize: '0.95rem' }}>{user.name}</span>
                     </div>
                   </div>
-                  {user.role === 'admin' && (
-                    <Link to="/admin" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
-                      <i className="fas fa-cog me-2"></i> Admin Panel
+                  <div className="d-flex flex-wrap gap-2">
+                    {user.role === 'admin' && (
+                      <Link to="/admin" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start flex-grow-1 border-secondary py-2" style={{ fontSize: '0.8rem' }}>
+                        <i className="fas fa-cog me-1"></i> Admin
+                      </Link>
+                    )}
+                    <Link to="/wishlist" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start flex-grow-1 border-secondary py-2" style={{ fontSize: '0.8rem' }}>
+                      <i className="fas fa-heart me-1 text-danger"></i> Wishlist
                     </Link>
-                  )}
-                  <Link to="/wishlist" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
-                    <i className="fas fa-heart me-2 text-danger"></i> Wishlist
-                  </Link>
-                  <Link to="/profile" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
-                    <i className="fas fa-user me-2 text-primary"></i> My Profile
-                  </Link>
+                    <Link to="/profile" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start flex-grow-1 border-secondary py-2" style={{ fontSize: '0.8rem' }}>
+                      <i className="fas fa-user me-1 text-primary"></i> Profile
+                    </Link>
+                  </div>
                   <button
                     onClick={async () => { await logout(); navigate('/login'); toggleMobile(); }}
-                    className="btn btn-dark btn-sm text-start w-100 text-danger border-secondary py-2"
+                    className="btn btn-dark btn-sm text-start w-100 text-danger border-secondary py-2 mt-1"
                   >
                     <i className="fas fa-sign-out-alt me-2"></i> Log Out
                   </button>
@@ -255,6 +250,13 @@ function Navbar() {
                 </Link>
               )}
             </div>
+
+            <ul className="list-unstyled d-flex flex-column gap-3 mb-auto">
+              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-home me-2 text-muted" style={{ width: '20px' }}></i>Home</Link></li>
+              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-shopping-bag me-2 text-muted" style={{ width: '20px' }}></i>Shop</Link></li>
+              <li><Link to="/about" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-info-circle me-2 text-muted" style={{ width: '20px' }}></i>About Us</Link></li>
+              <li><Link to="/contact" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-envelope me-2 text-muted" style={{ width: '20px' }}></i>Contact</Link></li>
+            </ul>
           </div>
         </div>
       )}
