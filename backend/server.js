@@ -1748,10 +1748,18 @@ app.get('*', (req, res) => {
 });
 
 // ==========================================
-// SERVER INITIALIZATION
+// SERVER INITIALIZATION & EXPORT
 // ==========================================
-initDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`High-concurrency Waitress-grade Express Server listening on http://localhost:${PORT}`);
+if (process.env.VERCEL) {
+  // Lazily trigger DB initialization in Serverless environments
+  initDB();
+} else {
+  // Standard local/traditional hosting initialization
+  initDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`High-concurrency Waitress-grade Express Server listening on http://localhost:${PORT}`);
+    });
   });
-});
+}
+
+export default app;
