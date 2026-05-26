@@ -41,6 +41,23 @@ app.use(session({
   }
 }));
 
+// Database connection middleware to ensure DB is connected before handling requests
+app.use(async (req, res, next) => {
+  // Skip DB check for ping and static assets to optimize speed and prevent failures
+  if (req.path.startsWith('/ping') || req.path.startsWith('/static') || req.path.startsWith('/api/static')) {
+    return next();
+  }
+  try {
+    await initDB();
+    if (!db) {
+      throw new Error('Database object is undefined');
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Database connection failed: ' + err.message });
+  }
+});
+
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/';
 let client;
