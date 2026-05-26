@@ -77,38 +77,8 @@ async function initDB() {
     await client.connect();
     db = client.db('silks');
     console.log('Successfully connected to MongoDB at:', MONGO_URI);
-
-    // Initialize collections and performance indexes lazily (equivalent to init_db_once in app.py)
-    const collections = await db.listCollections().toArray();
-    const colNames = collections.map(c => c.name);
-
-    const requiredCols = ['users', 'products', 'orders', 'reviews', 'wishlist', 'categories', 'user_activity', 'settings'];
-    for (const col of requiredCols) {
-      if (!colNames.includes(col)) {
-        await db.createCollection(col);
-      }
-    }
-
-    // Create performance indexes
-    await db.collection('users').createIndex({ email: 1 }, { unique: true });
-    await db.collection('products').createIndex({ category: 1 });
-    await db.collection('products').createIndex({ brand: 1 });
-    await db.collection('products').createIndex({ price: 1 });
-    await db.collection('products').createIndex({ 'sizes.size': 1 });
-    await db.collection('products').createIndex({ color: 1 });
-    await db.collection('products').createIndex({ fabric: 1 });
-    await db.collection('orders').createIndex({ user_id: 1 });
-    await db.collection('orders').createIndex({ status: 1 });
-    await db.collection('orders').createIndex({ 'items.product_id': 1 });
-    await db.collection('orders').createIndex({ user_id: 1, created_at: -1 });
-    await db.collection('reviews').createIndex({ product_id: 1 });
-    await db.collection('reviews').createIndex({ user_id: 1 });
-    await db.collection('wishlist').createIndex({ user_id: 1 });
-    await db.collection('categories').createIndex({ name: 1 }, { unique: true });
-    await db.collection('user_activity').createIndex({ user_id: 1, type: 1, timestamp: -1 });
-
   } catch (err) {
-    console.error('MongoDB initialization failed:', err);
+    console.error('MongoDB connection failed:', err);
   }
 }
 
