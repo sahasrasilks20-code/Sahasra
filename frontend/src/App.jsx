@@ -54,6 +54,7 @@ function Navbar() {
         padding: '0.9rem 0',
       };
 
+
   return (
     <>
       <nav style={navStyle}>
@@ -96,8 +97,8 @@ function Navbar() {
               <li className="nav-item"><Link to="/contact" style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 300, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>Contact</Link></li>
             </ul>
 
-            {/* Icons (Standard Right links) */}
-            <div className="d-flex align-items-center gap-2 gap-md-3">
+            {/* Desktop right links */}
+            <div className="d-none d-lg-flex align-items-center gap-3">
               <Link to="/" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1rem', textDecoration: 'none' }} title="Search">
                 <i className="fas fa-search"></i>
               </Link>
@@ -136,6 +137,19 @@ function Navbar() {
                 </Link>
               )}
             </div>
+
+            {/* Mobile right links - ONLY Cart! */}
+            <div className="d-lg-none d-flex align-items-center gap-2">
+              <Link to="/cart" className="position-relative" style={{ color: 'white', fontSize: '1.2rem', padding: '0.5rem', textDecoration: 'none' }} title="Shopping Bag">
+                <i className="fas fa-shopping-bag"></i>
+                {cart.length > 0 && (
+                  <span className="badge-count" style={{ top: '2px', right: '2px' }}>
+                    {cart.reduce((acc, item) => acc + item.quantity, 0)}
+                  </span>
+                )}
+              </Link>
+            </div>
+
           </div>
         </div>
       </nav>
@@ -147,7 +161,7 @@ function Navbar() {
           style={{
             position: 'fixed',
             top: 0, left: 0, width: '100%', height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(0,0,0,0.4)',
             zIndex: 999,
           }}
         >
@@ -155,17 +169,17 @@ function Navbar() {
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
-              top: 0, left: 0, width: '280px', height: '100vh',
+              top: 0, left: 0, width: '290px', height: '100vh',
               backgroundColor: '#111111',
               zIndex: 1001,
-              padding: '2rem',
+              padding: '2rem 1.5rem',
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '4px 0 15px rgba(0,0,0,0.5)',
               borderRight: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            <div className="d-flex justify-content-between align-items-center mb-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
               <span style={{ fontWeight: 400, fontSize: '1.25rem', color: 'white' }}>Navigation</span>
               <button
                 onClick={toggleMobile}
@@ -175,12 +189,71 @@ function Navbar() {
               </button>
             </div>
 
-            <ul className="list-unstyled d-flex flex-column gap-4">
-              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.1rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}>Home</Link></li>
-              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.1rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}>Shop</Link></li>
-              <li><Link to="/about" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.1rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}>About Us</Link></li>
-              <li><Link to="/contact" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.1rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}>Contact</Link></li>
+            {/* Mobile Drawer Search Box */}
+            <div className="mb-4">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const q = e.target.search.value;
+                navigate(`/?q=${encodeURIComponent(q)}`);
+                toggleMobile();
+              }}>
+                <div className="input-group">
+                  <input
+                    type="search"
+                    name="search"
+                    className="form-control bg-dark border-secondary text-white"
+                    placeholder="Search Sahasra..."
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                  <button className="btn btn-outline-light border-secondary" type="submit">
+                    <i className="fas fa-search"></i>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <ul className="list-unstyled d-flex flex-column gap-3 mb-auto">
+              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-home me-2 text-muted" style={{ width: '20px' }}></i>Home</Link></li>
+              <li><Link to="/" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-shopping-bag me-2 text-muted" style={{ width: '20px' }}></i>Shop</Link></li>
+              <li><Link to="/about" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-info-circle me-2 text-muted" style={{ width: '20px' }}></i>About Us</Link></li>
+              <li><Link to="/contact" onClick={toggleMobile} style={{ color: 'white', fontSize: '1.05rem', textDecoration: 'none', fontWeight: 300, display: 'block' }}><i className="fas fa-envelope me-2 text-muted" style={{ width: '20px' }}></i>Contact</Link></li>
             </ul>
+
+            {/* User Info / Actions in Mobile Drawer */}
+            <div className="pt-4 border-top border-secondary mt-4">
+              {user ? (
+                <div className="d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center gap-2 text-white mb-2">
+                    <i className="fas fa-user-circle fa-2x text-muted"></i>
+                    <div>
+                      <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>Logged in as</small>
+                      <span className="fw-medium text-capitalize" style={{ fontSize: '0.95rem' }}>{user.name}</span>
+                    </div>
+                  </div>
+                  {user.role === 'admin' && (
+                    <Link to="/admin" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
+                      <i className="fas fa-cog me-2"></i> Admin Panel
+                    </Link>
+                  )}
+                  <Link to="/wishlist" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
+                    <i className="fas fa-heart me-2 text-danger"></i> Wishlist
+                  </Link>
+                  <Link to="/profile" onClick={toggleMobile} className="btn btn-outline-light btn-sm text-start w-100 border-secondary py-2">
+                    <i className="fas fa-user me-2 text-primary"></i> My Profile
+                  </Link>
+                  <button
+                    onClick={async () => { await logout(); navigate('/login'); toggleMobile(); }}
+                    className="btn btn-dark btn-sm text-start w-100 text-danger border-secondary py-2"
+                  >
+                    <i className="fas fa-sign-out-alt me-2"></i> Log Out
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" onClick={toggleMobile} className="btn btn-outline-light w-100 border-secondary py-2">
+                  <i className="fas fa-sign-in-alt me-2"></i> Log In / Register
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -323,6 +396,15 @@ function AppRoutes() {
   );
 }
 
+// Component to automatically scroll to the top of the window on every route change (handles all button page clicks)
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState(() => {
@@ -383,6 +465,7 @@ export default function App() {
       <CartContext.Provider value={{ cart, setCart }}>
         <FlashContext.Provider value={{ flash, showFlash, clearFlash }}>
           <Router>
+            <ScrollToTop />
             <AppRoutes />
           </Router>
         </FlashContext.Provider>
