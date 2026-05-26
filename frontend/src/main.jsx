@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 
-// Automatically prepend production backend URL to relative image assets globally
+// Automatically prepend production backend URL to relative database-uploaded images globally
 const originalSrcSetter = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
 Object.defineProperty(HTMLImageElement.prototype, 'src', {
   set(val) {
@@ -12,7 +12,8 @@ Object.defineProperty(HTMLImageElement.prototype, 'src', {
         const urlObj = new URL(val, window.location.href);
         if (urlObj.origin === window.location.origin) {
           const pathname = urlObj.pathname;
-          if ((pathname.startsWith('/static') || pathname.startsWith('/image')) && !pathname.startsWith('/api/')) {
+          // ONLY intercept database GridFS uploads (/image/*) and let static design assets (/static/*) load directly from Vercel's static CDN!
+          if (pathname.startsWith('/image') && !pathname.startsWith('/api/')) {
             const backendUrl = import.meta.env.VITE_API_URL || '/api';
             val = `${urlObj.origin}${backendUrl}${pathname}${urlObj.search}`;
           }
