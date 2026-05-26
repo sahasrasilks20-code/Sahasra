@@ -21,6 +21,7 @@ export default function ProductDetail() {
 
   // Fetch Product Details
   useEffect(() => {
+    window.scrollTo(0, 0); // Reset page scroll to the top immediately upon navigating/fetching a product
     setLoading(true);
     axios.get(`/api/products/${id}`)
       .then(res => {

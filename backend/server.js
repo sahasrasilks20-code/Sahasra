@@ -77,6 +77,17 @@ async function initDB() {
     await client.connect();
     db = client.db('silks');
     console.log('Successfully connected to MongoDB at:', MONGO_URI);
+
+    // Create database indexes in the background to make product filtering, search, and detail lookups extremely fast
+    db.collection('products').createIndex({ category: 1 }, { background: true }).catch(e => console.error('Index category failed:', e));
+    db.collection('products').createIndex({ brand: 1 }, { background: true }).catch(e => console.error('Index brand failed:', e));
+    db.collection('products').createIndex({ color: 1 }, { background: true }).catch(e => console.error('Index color failed:', e));
+    db.collection('products').createIndex({ fabric: 1 }, { background: true }).catch(e => console.error('Index fabric failed:', e));
+    db.collection('products').createIndex({ 'sizes.size': 1 }, { background: true }).catch(e => console.error('Index size failed:', e));
+    db.collection('products').createIndex({ price: 1 }, { background: true }).catch(e => console.error('Index price failed:', e));
+    db.collection('products').createIndex({ name: 'text', description: 'text' }, { background: true }).catch(e => console.error('Index text failed:', e));
+    db.collection('reviews').createIndex({ product_id: 1 }, { background: true }).catch(e => console.error('Index review product_id failed:', e));
+    db.collection('orders').createIndex({ user_id: 1 }, { background: true }).catch(e => console.error('Index order user_id failed:', e));
   } catch (err) {
     console.error('MongoDB connection failed:', err);
   }
@@ -336,24 +347,47 @@ app.get('/api/products', async (req, res) => {
     if (sort_by === 'price_asc') sort_criteria = { price: 1 };
     else if (sort_by === 'price_desc') sort_criteria = { price: -1 };
 
+    // Sidebar metadata options
+    const sidebar_query = {};
+    if (req.query.category) sidebar_query.category = req.query.category;
+
     // Pagination
     const page = parseInt(req.query.page || '1', 10);
     const per_page = 12;
     const skip = (page - 1) * per_page;
 
-    const total_products = await db.collection('products').countDocuments(query);
+    // Group independent DB commands and run them concurrently to minimize round-trip network latency
+    const [
+      total_products,
+      products,
+      distinct_categories,
+      brands,
+      colors,
+      fabrics,
+      sizes
+    ] = await Promise.all([
+      db.collection('products').countDocuments(query),
+      db.collection('products')
+        .find(query)
+        .sort(sort_criteria)
+        .skip(skip)
+        .limit(per_page)
+        .toArray(),
+      db.collection('products').distinct('category'),
+      db.collection('products').distinct('brand', sidebar_query),
+      db.collection('products').distinct('color', sidebar_query),
+      db.collection('products').distinct('fabric', sidebar_query),
+      db.collection('products').distinct('sizes.size', sidebar_query)
+    ]);
+
     const total_pages = Math.ceil(total_products / per_page);
 
-    const products = await db.collection('products')
-      .find(query)
-      .sort(sort_criteria)
-      .skip(skip)
-      .limit(per_page)
-      .toArray();
-
-    // Batch query reviews to avoid N+1 queries (identical to homepage optimization)
+    // Batch query reviews and categories metadata in parallel
     const product_ids = products.map(p => p._id.toString());
-    const all_reviews = await db.collection('reviews').find({ product_id: { $in: product_ids } }).toArray();
+    const [all_reviews, categories_metadata] = await Promise.all([
+      db.collection('reviews').find({ product_id: { $in: product_ids } }).toArray(),
+      db.collection('categories').find({ name: { $in: distinct_categories } }).toArray()
+    ]);
 
     const reviews_by_product = {};
     for (const r of all_reviews) {
@@ -376,13 +410,6 @@ app.get('/api/products', async (req, res) => {
       }
     }
 
-    // Sidebar metadata options
-    const sidebar_query = {};
-    if (req.query.category) sidebar_query.category = req.query.category;
-
-    const distinct_categories = await db.collection('products').distinct('category');
-    const categories_metadata = await db.collection('categories').find({ name: { $in: distinct_categories } }).toArray();
-
     const categories = distinct_categories.filter(c => c !== 'Clothing').map(cat_name => {
       const meta = categories_metadata.find(m => m.name === cat_name);
       return {
@@ -390,11 +417,6 @@ app.get('/api/products', async (req, res) => {
         image_url: meta?.image_url || `https://via.placeholder.com/300x200?text=${encodeURIComponent(cat_name)}`
       };
     });
-
-    const brands = await db.collection('products').distinct('brand', sidebar_query);
-    const colors = await db.collection('products').distinct('color', sidebar_query);
-    const fabrics = await db.collection('products').distinct('fabric', sidebar_query);
-    const sizes = await db.collection('products').distinct('sizes.size', sidebar_query);
 
     res.json({
       products,
@@ -496,14 +518,36 @@ app.get('/api/products/:id', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Category recommendations
-    const recommendations = await db.collection('products').find({
+    // Category recommendations, reviews, and eligibility checks run concurrently to eliminate sequential network round-trips
+    const recommendationsPromise = db.collection('products').find({
       category: product.category,
       _id: { $ne: id }
     }).limit(4).toArray();
 
-    // Reviews
-    const reviews = await db.collection('reviews').find({ product_id: req.params.id }).sort({ created_at: -1 }).toArray();
+    const reviewsPromise = db.collection('reviews').find({ product_id: req.params.id }).sort({ created_at: -1 }).toArray();
+
+    let canReviewPromise = Promise.resolve(null);
+    let hasReviewedPromise = Promise.resolve(null);
+
+    if (req.session.user_id) {
+      canReviewPromise = db.collection('orders').findOne({
+        user_id: req.session.user_id,
+        'items.product_id': req.params.id,
+        status: 'Delivered'
+      });
+      hasReviewedPromise = db.collection('reviews').findOne({
+        user_id: req.session.user_id,
+        product_id: req.params.id
+      });
+    }
+
+    const [recommendations, reviews, has_purchased, has_reviewed] = await Promise.all([
+      recommendationsPromise,
+      reviewsPromise,
+      canReviewPromise,
+      hasReviewedPromise
+    ]);
+
     if (reviews.length > 0) {
       const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
       product.average_rating = parseFloat((sum / reviews.length).toFixed(1));
@@ -513,22 +557,7 @@ app.get('/api/products/:id', async (req, res) => {
       product.review_count = 0;
     }
 
-    // Check if user is eligible to write a review
-    let can_review = false;
-    if (req.session.user_id) {
-      const has_purchased = await db.collection('orders').findOne({
-        user_id: req.session.user_id,
-        'items.product_id': req.params.id,
-        status: 'Delivered'
-      });
-      const has_reviewed = await db.collection('reviews').findOne({
-        user_id: req.session.user_id,
-        product_id: req.params.id
-      });
-      if (has_purchased && !has_reviewed) {
-        can_review = true;
-      }
-    }
+    const can_review = !!(has_purchased && !has_reviewed);
 
     res.json({ product, recommendations, reviews, can_review });
   } catch (err) {

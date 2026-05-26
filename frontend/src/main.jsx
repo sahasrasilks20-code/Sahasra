@@ -9,13 +9,20 @@ Object.defineProperty(HTMLImageElement.prototype, 'src', {
   set(val) {
     if (val && typeof val === 'string' && !val.startsWith('data:') && !val.startsWith('blob:')) {
       try {
-        const urlObj = new URL(val, window.location.href);
-        if (urlObj.origin === window.location.origin) {
-          const pathname = urlObj.pathname;
-          // ONLY intercept database GridFS uploads (/image/*) and let static design assets (/static/*) load directly from Vercel's static CDN!
-          if (pathname.startsWith('/image') && !pathname.startsWith('/api/')) {
-            const backendUrl = import.meta.env.VITE_API_URL || '/api';
-            val = `${urlObj.origin}${backendUrl}${pathname}${urlObj.search}`;
+        // 1. Optimize static images: intercept any static assets containing "/static/" and force them to load directly from the local frontend origin
+        if (val.includes('/static/')) {
+          const staticIdx = val.indexOf('/static/');
+          const pathnameAndQuery = val.substring(staticIdx);
+          val = `${window.location.origin}${pathnameAndQuery}`;
+        } else {
+          // 2. Intercept GridFS database uploads (/image/*) to route them through the remote/production Express backend
+          const urlObj = new URL(val, window.location.href);
+          if (urlObj.origin === window.location.origin) {
+            const pathname = urlObj.pathname;
+            if (pathname.startsWith('/image') && !pathname.startsWith('/api/')) {
+              const backendUrl = import.meta.env.VITE_API_URL || '/api';
+              val = `${urlObj.origin}${backendUrl}${pathname}${urlObj.search}`;
+            }
           }
         }
       } catch (e) {}
