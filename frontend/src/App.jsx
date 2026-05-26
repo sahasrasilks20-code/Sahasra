@@ -138,9 +138,9 @@ function Navbar() {
               )}
             </div>
 
-            {/* Mobile right links - ONLY Cart! */}
-            <div className="d-lg-none d-flex align-items-center gap-2">
-              <Link to="/cart" className="position-relative" style={{ color: 'white', fontSize: '1.2rem', padding: '0.5rem', textDecoration: 'none' }} title="Shopping Bag">
+            {/* Mobile right links - Cart and Log Out */}
+            <div className="d-lg-none d-flex align-items-center gap-1">
+              <Link to="/cart" className="position-relative text-white" style={{ fontSize: '1.2rem', padding: '0.4rem', textDecoration: 'none' }} title="Shopping Bag">
                 <i className="fas fa-shopping-bag"></i>
                 {cart.length > 0 && (
                   <span className="badge-count" style={{ top: '2px', right: '2px' }}>
@@ -148,6 +148,15 @@ function Navbar() {
                   </span>
                 )}
               </Link>
+              {user && (
+                <button
+                  onClick={async () => { await logout(); navigate('/login'); }}
+                  style={{ color: 'white', fontSize: '1.15rem', background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem' }}
+                  title="Log Out"
+                >
+                  <i className="fas fa-sign-out-alt"></i>
+                </button>
+              )}
             </div>
 
           </div>
@@ -409,7 +418,10 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('silks_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem('silks_cart');
     return saved ? JSON.parse(saved) : [];
@@ -432,21 +444,35 @@ export default function App() {
 
   const clearFlash = () => setFlash(null);
 
-  // Fetch current user on mount
+  // Fetch current user on mount (sync to cache)
   useEffect(() => {
     axios.get('/api/current_user')
       .then(res => {
-        if (res.data) setUser(res.data);
+        if (res.data) {
+          setUser(res.data);
+          localStorage.setItem('silks_user', JSON.stringify(res.data));
+        } else {
+          setUser(null);
+          localStorage.removeItem('silks_user');
+        }
       })
-      .catch(err => console.error('Auth verification failed:', err))
+      .catch(err => {
+        console.error('Auth verification failed:', err);
+        setUser(null);
+        localStorage.removeItem('silks_user');
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const login = (userData) => setUser(userData);
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('silks_user', JSON.stringify(userData));
+  };
   const logout = async () => {
     try {
       await axios.post('/api/logout');
       setUser(null);
+      localStorage.removeItem('silks_user');
       showFlash('Successfully logged out', 'success');
     } catch (err) {
       showFlash('Logout failed', 'danger');
