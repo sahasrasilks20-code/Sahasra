@@ -7,11 +7,17 @@ import './index.css';
 const originalSrcSetter = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
 Object.defineProperty(HTMLImageElement.prototype, 'src', {
   set(val) {
-    if (val && typeof val === 'string' && !val.startsWith('http') && !val.startsWith('data:') && !val.startsWith('blob:')) {
-      const backendUrl = import.meta.env.VITE_API_URL || '/api';
-      if (backendUrl) {
-        val = `${backendUrl.replace(/\/$/, '')}/${val.replace(/^\//, '')}`;
-      }
+    if (val && typeof val === 'string' && !val.startsWith('data:') && !val.startsWith('blob:')) {
+      try {
+        const urlObj = new URL(val, window.location.href);
+        if (urlObj.origin === window.location.origin) {
+          const pathname = urlObj.pathname;
+          if ((pathname.startsWith('/static') || pathname.startsWith('/image')) && !pathname.startsWith('/api/')) {
+            const backendUrl = import.meta.env.VITE_API_URL || '/api';
+            val = `${urlObj.origin}${backendUrl}${pathname}${urlObj.search}`;
+          }
+        }
+      } catch (e) {}
     }
     originalSrcSetter.call(this, val);
   }
