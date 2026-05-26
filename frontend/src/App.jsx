@@ -162,7 +162,7 @@ function Navbar() {
             position: 'fixed',
             top: 0, left: 0, width: '100%', height: '100vh',
             backgroundColor: 'rgba(0,0,0,0.4)',
-            zIndex: 999,
+            zIndex: 1100, // Higher than navbar's 1000 to overlay the navbar completely and block any background links/X buttons
           }}
         >
           <div
@@ -177,6 +177,7 @@ function Navbar() {
               flexDirection: 'column',
               boxShadow: '4px 0 15px rgba(0,0,0,0.5)',
               borderRight: '1px solid rgba(255,255,255,0.08)',
+              overflowY: 'auto', // Enable scrolling for smaller mobile screens so profile and logout actions are always accessible
             }}
           >
             <div className="d-flex justify-content-between align-items-center mb-4">
