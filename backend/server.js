@@ -16,8 +16,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Serve static assets from local static directory
-app.use('/static', express.static(path.join(__dirname, './static')));
+// Serve static assets from local static directory under both /static and /api/static
+app.use(['/static', '/api/static'], express.static(path.join(__dirname, './static')));
 
 // Enable CORS
 app.use(cors({
@@ -198,7 +198,7 @@ function requireAdmin(req, res, next) {
 // ==========================================
 // 1. ASSET / IMAGE STREAMING (GridFS Bucket)
 // ==========================================
-app.get('/image/:id', async (req, res) => {
+app.get(['/image/:id', '/api/image/:id'], async (req, res) => {
   try {
     const bucket = new GridFSBucket(db, { bucketName: 'fs' });
     const id = new ObjectId(req.params.id);

@@ -8,7 +8,7 @@ const originalSrcSetter = Object.getOwnPropertyDescriptor(HTMLImageElement.proto
 Object.defineProperty(HTMLImageElement.prototype, 'src', {
   set(val) {
     if (val && typeof val === 'string' && !val.startsWith('http') && !val.startsWith('data:') && !val.startsWith('blob:')) {
-      const backendUrl = import.meta.env.VITE_API_URL || '';
+      const backendUrl = import.meta.env.VITE_API_URL || '/api';
       if (backendUrl) {
         val = `${backendUrl.replace(/\/$/, '')}/${val.replace(/^\//, '')}`;
       }
