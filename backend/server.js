@@ -30,16 +30,63 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Express Session Configuration (matches Flask Session cookie behavior)
+const Store = session.Store;
+class MongoStore extends Store {
+  async get(sid, callback) {
+    try {
+      await initDB();
+      if (!db) return callback(null, null);
+      const s = await db.collection('sessions').findOne({ _id: sid });
+      if (!s) return callback(null, null);
+      if (s.expires && new Date() > s.expires) {
+        await db.collection('sessions').deleteOne({ _id: sid });
+        return callback(null, null);
+      }
+      callback(null, s.data);
+    } catch (err) {
+      callback(err);
+    }
+  }
+  async set(sid, data, callback) {
+    try {
+      await initDB();
+      if (!db) return callback(null);
+      const expires = data.cookie && data.cookie.expires ? new Date(data.cookie.expires) : new Date(Date.now() + 86400000);
+      await db.collection('sessions').updateOne({ _id: sid }, { $set: { data, expires } }, { upsert: true });
+      callback(null);
+    } catch (err) {
+      callback(err);
+    }
+  }
+  async destroy(sid, callback) {
+    try {
+      await initDB();
+      if (!db) return callback(null);
+      await db.collection('sessions').deleteOne({ _id: sid });
+      callback(null);
+    } catch (err) {
+      callback(err);
+    }
+  }
+}
+
+app.set('trust proxy', 1);
+
+const isProd = process.env.NODE_ENV === 'production' || (process.env.MONGO_URI && process.env.MONGO_URI.includes('mongodb+srv'));
+
 app.use(session({
   secret: 'your_secret_key_here',
   resave: false,
   saveUninitialized: false,
+  store: new MongoStore(),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    secure: false,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     httpOnly: true
   }
 }));
+
 
 // Database connection middleware to ensure DB is connected before handling requests
 app.use(async (req, res, next) => {

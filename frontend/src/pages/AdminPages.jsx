@@ -3,6 +3,18 @@ import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext, FlashContext } from '../App.jsx';
 
+const getApiUrl = (path) => {
+  const base = axios.defaults.baseURL || '';
+  if (!base || base === '/api') return path;
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  if (cleanBase.endsWith('/api') && cleanPath.startsWith('/api/')) {
+    return cleanBase + cleanPath.slice(4);
+  }
+  return cleanBase + cleanPath;
+};
+
+
 /* ─────────────────────────────────────────────────────────────
    SHARED ADMIN NAVBAR  (matches every HTML admin template)
 ───────────────────────────────────────────────────────────── */
@@ -37,7 +49,7 @@ function AdminNavbar({ active }) {
       zIndex: 1030,
     }}>
       <div className="container">
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
           {/* Brand */}
           <Link to="/admin" style={{
             fontFamily: "'Outfit', sans-serif",
@@ -54,7 +66,7 @@ function AdminNavbar({ active }) {
           </Link>
 
           {/* Nav links */}
-          <ul className="navbar-nav flex-row align-items-center gap-1 mb-0" style={{ listStyle: 'none' }}>
+          <ul className="navbar-nav flex-row flex-wrap align-items-center gap-2 mb-0" style={{ listStyle: 'none', paddingLeft: 0 }}>
             {links.map(l => (
               <li key={l.key}>
                 <Link
@@ -63,7 +75,7 @@ function AdminNavbar({ active }) {
                     fontWeight: 600,
                     color: active === l.key ? '#2c3e50' : '#555',
                     textDecoration: 'none',
-                    padding: '0.4rem 0.75rem',
+                    padding: '0.4rem 0.6rem',
                     borderBottom: active === l.key ? '2px solid #2c3e50' : '2px solid transparent',
                     transition: 'all 0.2s',
                   }}
@@ -72,10 +84,10 @@ function AdminNavbar({ active }) {
                 </Link>
               </li>
             ))}
-            <li className="ms-3">
+            <li className="ms-2 ms-md-3">
               <button
                 onClick={handleLogout}
-                className="btn btn-outline-danger btn-sm px-4"
+                className="btn btn-outline-danger btn-sm px-3 px-md-4"
                 style={{ fontWeight: 600 }}
               >
                 Logout
@@ -85,6 +97,7 @@ function AdminNavbar({ active }) {
         </div>
       </div>
     </nav>
+
   );
 }
 
@@ -690,7 +703,7 @@ export function AdminOrders() {
             {/* Actions */}
             <div className="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-3">
               <button 
-                onClick={() => window.open(`/api/orders/${order._id}/delivery_slip`, '_blank')} 
+                onClick={() => window.open(getApiUrl(`/api/orders/${order._id}/delivery_slip`), '_blank')} 
                 style={{ background: '#0d6efd', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, padding: '0.6rem 1.2rem', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
                 onMouseOut={(e) => e.currentTarget.style.opacity = '1'}

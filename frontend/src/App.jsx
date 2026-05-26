@@ -457,9 +457,9 @@ export default function App() {
         }
       })
       .catch(err => {
-        console.error('Auth verification failed:', err);
-        setUser(null);
-        localStorage.removeItem('silks_user');
+        console.error('Auth verification failed due to network/server delay:', err);
+        // Do NOT log the user out or clear cache on temporary network errors or 502/504 server restarts!
+        // This keeps the user session persistent in the UI until they explicitly click log out or their session is verified as expired by a 200 null response.
       })
       .finally(() => setLoading(false));
   }, []);

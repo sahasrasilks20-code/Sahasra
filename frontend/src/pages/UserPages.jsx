@@ -3,6 +3,18 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext, CartContext, FlashContext } from '../App.jsx';
 
+const getApiUrl = (path) => {
+  const base = axios.defaults.baseURL || '';
+  if (!base || base === '/api') return path;
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  if (cleanBase.endsWith('/api') && cleanPath.startsWith('/api/')) {
+    return cleanBase + cleanPath.slice(4);
+  }
+  return cleanBase + cleanPath;
+};
+
+
 export function Profile() {
   const { user } = useContext(UserContext);
   const { showFlash } = useContext(FlashContext);
@@ -595,7 +607,7 @@ export function OrderDetails() {
               Phone: {order.shipping_details.phone}
             </p>
 
-            <a href={`/api/orders/${order._id}/invoice`} target="_blank" rel="noreferrer" className="btn btn-outline w-100">
+            <a href={getApiUrl(`/api/orders/${order._id}/invoice`)} target="_blank" rel="noreferrer" className="btn btn-outline w-100">
               Download Invoice
             </a>
           </div>
