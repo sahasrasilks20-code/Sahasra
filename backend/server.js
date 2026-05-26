@@ -47,8 +47,12 @@ let client;
 let db;
 
 async function initDB() {
+  if (client && db) return; // Reuse existing connection
   try {
-    const kwargs = {};
+    const kwargs = {
+      maxPoolSize: process.env.VERCEL ? 1 : 10, // Restrict connection usage in serverless
+      serverSelectionTimeoutMS: 5000 // Timeout faster in serverless
+    };
     if (MONGO_URI.includes('mongodb+srv') || MONGO_URI.toLowerCase().includes('ssl=true') || MONGO_URI.toLowerCase().includes('tls=true')) {
       // Dynamic TLS support for remote Atlas instances
     }
